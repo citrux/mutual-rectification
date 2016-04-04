@@ -1,8 +1,8 @@
-use std::fs::File;
-use std::io::{BufReader, BufRead};
 use std::f64::consts::PI;
 
+use scoped_threadpool::Pool;
 use scattering::material::{Material, BrillouinZone};
+use scattering::probability;
 use linal::{Point, Vec2};
 
 const VF: f64 = 1e6;
@@ -29,39 +29,52 @@ pub struct SL {
 }
 
 impl SL {
-    pub fn without_phonons() -> SL {
+    pub fn new(optical_energy: f64, optical_constant: f64, acoustic_constant: f64) -> SL {
         let a = Point::new(-PI, -30.0);
         let b = Point::new(PI, -30.0);
         let d = Point::new(-PI, 30.0);
         let brillouin_zone = BrillouinZone::new(a, b, d);
+        let energy_samples = 1000usize;
+
         let mut s = SL {
             minimum_energy: 0.0,
             maximum_energy: 0.0,
             brillouin_zone: brillouin_zone,
-            optical_energy: 0.0,
-            optical_constant: 0.0,
-            acoustic_constant: 0.0,
+            optical_energy: optical_energy,
+            optical_constant: optical_constant,
+            acoustic_constant: acoustic_constant,
             energies: Vec::new(),
             probabilities: Vec::new(),
         };
+
         let (min, max) = s.get_energy_limits();
         s.minimum_energy = min;
         s.maximum_energy = max;
-        s
-    }
-    #[allow(dead_code)]
-    pub fn with_phonons(optical_energy: f64,
-                        optical_constant: f64,
-                        acoustic_constant: f64,
-                        fname: &str)
-                        -> SL {
-        let mut s = SL::without_phonons();
-        let (e, p) = read_probabilities(fname);
-        s.optical_energy = optical_energy;
-        s.optical_constant = optical_constant;
-        s.acoustic_constant = acoustic_constant;
-        s.energies = e;
-        s.probabilities = p;
+
+        let mut energies = Vec::with_capacity(energy_samples);
+        let mut probabilities = vec![0f64; energy_samples];
+
+        let energy_step = (s.maximum_energy - s.minimum_energy) / (energy_samples as f64 - 1.0);
+        for i in 0..energy_samples {
+            let e = s.minimum_energy + energy_step * (i as f64);
+            energies.push(e);
+        }
+
+        let mut pool = Pool::new(4);
+
+        pool.scoped(|scope| {
+            for (index, item) in probabilities.iter_mut().enumerate() {
+                let ref material = s;
+                let error = 1e-5;
+                let energy = energies[index];
+                scope.execute(move || {
+                    *item = probability(energy, material, error);
+                });
+            }
+        });
+
+        s.energies = energies;
+        s.probabilities = probabilities;
         s
     }
 
@@ -167,27 +180,4 @@ impl Material for SL {
     fn acoustic_scattering(&self, p: &Point) -> f64 {
         self.acoustic_constant * self.probability(self.energy(p))
     }
-}
-
-
-fn read_probabilities(filename: &str) -> (Vec<f64>, Vec<f64>) {
-    let file = File::open(filename)
-                   .ok()
-                   .expect(&format!("Can't open `{}`", filename));
-    let reader = BufReader::new(file);
-    let (mut a, mut b) = (Vec::new(), Vec::new());
-    for line in reader.lines().filter_map(|result| result.ok()) {
-        let mut data = line.split_whitespace();
-        let first = data.next()
-                        .expect("Can't get item");
-        let second = data.next()
-                         .expect("Can't get item");
-        a.push(first.parse::<f64>()
-                    .ok()
-                    .expect("Can't parse string"));
-        b.push(second.parse::<f64>()
-                     .ok()
-                     .expect("Can't parse string"));
-    }
-    (a, b)
 }

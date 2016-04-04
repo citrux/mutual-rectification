@@ -24,20 +24,21 @@ fn main() {
         None => "config.ini".to_owned(),
     };
     let conf = Ini::from_file(&file_name).unwrap();
+
     let plot = plot_from_config(&conf);
     let fields = fields_from_config(&conf);
 
     let optical_energy: f64 = conf.get("phonons", "optical_energy").unwrap_or(5e-2);
     let optical_constant: f64 = conf.get("phonons", "optical_constant").unwrap_or(1.5e-3);
     let acoustic_constant: f64 = conf.get("phonons", "acoustic_constant").unwrap_or(1.5e-3);
-    let input: String = conf.get("phonons", "input").unwrap_or("data/prob.dat".to_owned());
-    let m = SL::with_phonons(optical_energy, optical_constant, acoustic_constant, &input);
+    let m = SL::new(optical_energy, optical_constant, acoustic_constant);
 
     let dt: f64 = conf.get("modelling", "dt").unwrap_or(1e-1);
     let all_time: f64 = conf.get("modelling", "all_time").unwrap_or(1e3);
     let temperature: f64 = conf.get("modelling", "temperature").unwrap_or(7e-3);
     let particles: usize = conf.get("modelling", "particles").unwrap_or(100);
     let threads: usize = conf.get("modelling", "threads").unwrap_or(1);
+
 
     let output_clone = plot.output.clone();
     let output = Path::new(&output_clone);
@@ -176,10 +177,12 @@ fn clean_result(filename: &Path) {
 
 fn append_result_line(filename: &Path, fields: &Fields, result: &Stats) {
     let parent = filename.parent()
-                         .expect(&format!("Can't get parent directory for `{}`", filename.display()));
+                         .expect(&format!("Can't get parent directory for `{}`",
+                                          filename.display()));
     if parent.exists() == false {
-        create_dir(parent).ok()
-                          .expect(&format!("Can't create `{}` directory!", parent.display()));
+        create_dir(parent)
+            .ok()
+            .expect(&format!("Can't create `{}` directory!", parent.display()));
     }
     let file = OpenOptions::new()
                    .create(true)

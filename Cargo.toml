@@ -11,13 +11,5 @@ scattering = { git = "https://github.com/pinecrew/electron-phonon-scattering-2d"
 linal = "0.1"
 
 [[bin]]
-name = "probability"
-path = "src/probability.rs"
-
-[[bin]]
 name = "current"
 path = "src/current.rs"
-
-[[bin]]
-name = "zero-test"
-path = "src/zero.rs"
