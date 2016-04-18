@@ -1,0 +1,70 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{indentfirst}
+\usepackage{amsmath}
+\usepackage{euler}
+\usepackage[unicode, colorlinks]{hyperref}
+% \usepackage{pscyr}
+\begin{document}
+\author{Вова Абдрахманов}
+\title{Расчёт постоянного тока в твёрдом теле методом Монте-Карло}
+\maketitle
+\tableofcontents
+\newpage
+\section{Введение}
+Для изучения кинетических явлений в твёрдых телах в некоторых случаях допустимо полуклассическое приближение. Носители заряда при этом можно считать обычными частицами, спектр которых отличается от
+\begin{equation}
+    \varepsilon = \frac{p^2}{2m}
+\end{equation}
+из-за взаимодействия с кристаллической решёткой; при этом роль импульса играет квазиимпульс. При этом скорость определяется из соотношения
+\begin{equation}
+    \vec{v} = \frac{\partial \varepsilon}{\partial \vec{p}},
+\end{equation}
+а уравнение движения определяются вторым законом Ньютона.
+
+\section{Уравнение движения}
+Записывая второй закон Ньютона для носителей заряда, получаем
+\begin{equation}
+    \dot{\vec{p}} = \vec{F}.
+\end{equation}
+Так как в твердом теле носители движутся под действием электрических и магнитных полей, то в правой части стоит сила Лоренца:
+\begin{equation}
+    \dot{\vec{p}} = q\left(\vec{E} + \vec{v}\times\vec{B}\right).
+    \label{eq:newton}
+\end{equation}
+
+Но это уравнение определяет движение в идеальной решётке. Если же в решетке есть дефекты (например, фононы), то необходимо учесть рассеяние на них. При этом между актами рассеяния движение будет описываться уравнением~\eqref{eq:newton}.
+
+\section{Рассеяние на фононах}
+Пусть плотность вероятности рассеяния на фононах из состояния \( \vec{p} \) в состояние \( \vec{p}' \) в единицу времени равна \( w(\vec{p}, \vec{p}') \). Тогда полная вероятность рассеяния в единицу времени равна 
+\begin{equation}
+    W(\vec{p}) = \int_{BZ} w(\vec{p}, \vec{p}') d^3 p'.
+\end{equation}
+
+Получим теперь распределение для времени между двумя последовательными процессами рассеяния. Вероятность того, что рассеяния не произойдёт за достаточно малое время \( \Delta t \) равна \( P_1 = 1 - W(\vec{p})\Delta t \). Таким образом, вероятность того, что рассеяние не произойдёт в течение промежутка времени \( t \) равна
+\begin{equation}
+    P(T > t) = \lim_{\max\{\Delta t_i\} \to 0} \prod_{\sum_i \Delta t_i = T} \left[1 - W(\vec{p}(t_i))\Delta t_i\right].
+\end{equation}
+Логарифмируя, получаем
+\begin{gather}
+    \ln P(T > t) = \lim_{\max\{\Delta t_i\} \to 0} \sum_{\sum_i \Delta t_i = t} \ln\left[1 - W(\vec{p}(t_i))\Delta t_i\right] = \\ = -\lim_{\max\{\Delta t_i\} \to 0} \sum_{\sum_i \Delta t_i = t} W(\vec{p}(t_i))\Delta t_i = -\int_0^t W(\vec{p}(t')) dt'.
+\end{gather}
+Для функции распределения отсюда получаем
+\begin{equation}
+    F(t) = P(T < t) = 1 - \exp\left[-\int_0^t W(\vec{p}(t')) dt'\right].
+\end{equation}
+
+Для определения времени между двумя рассеяниями при моделировании можно использовать равномерно распределённую величину \(U \in [0, 1]\). Тогда время можно отыскать из следующих соображений:
+\begin{equation}
+    F(t) = U,\quad \int_0^t W(\vec{p}(t')) dt' = -\ln (1 - U).
+\end{equation}
+
+Теперь было бы неплохо определить \( w(\vec{p}, \vec{p}') \). Для этого рассмотрим для начала электроны в идеальной решётке в отсутствие фононов.
+
+\subsection{Электроны в идеальной решётке}
+\subsection{Колебания решётки}
+\subsection{Акустические фононы}
+\subsection{Оптические фононы}
+\end{document}

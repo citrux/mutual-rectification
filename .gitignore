@@ -1,2 +1,13 @@
 target
 *.lock
+
+*.aux
+*.fls
+*.fdb_latexmk
+*.log
+*.out
+*.pdf
+*.synctex.gz
+*.toc
+
+*.sublime-*
