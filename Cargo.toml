@@ -8,7 +8,7 @@ tini = "0.1"
 scoped_threadpool = "0.1.*"
 time = "0.1"
 scattering = { git = "https://github.com/pinecrew/electron-phonon-scattering-2d" }
-linal = "0.1"
+linal = "0.2"
 
 [[bin]]
 name = "current"

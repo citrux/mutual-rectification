@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 use scoped_threadpool::Pool;
 use scattering::material::{Material, BrillouinZone};
 use scattering::probability;
-use linal::{Point, Vec2};
+use linal::Vec2;
 
 const VF: f64 = 1e6;
 const HBAR: f64 = 6.5e-16;
@@ -30,9 +30,9 @@ pub struct SL {
 
 impl SL {
     pub fn new(optical_energy: f64, optical_constant: f64, acoustic_constant: f64) -> SL {
-        let a = Point::new(-PI, -30.0);
-        let b = Point::new(PI, -30.0);
-        let d = Point::new(-PI, 30.0);
+        let a = Vec2::new(-PI, -30.0);
+        let b = Vec2::new(PI, -30.0);
+        let d = Vec2::new(-PI, 30.0);
         let brillouin_zone = BrillouinZone::new(a, b, d);
         let energy_samples = 1000usize;
 
@@ -116,14 +116,14 @@ impl SL {
 
 impl Material for SL {
     // Выражение для энергетического спектра (в декартовых координатах)
-    fn energy(&self, p: &Point) -> f64 {
+    fn energy(&self, p: &Vec2) -> f64 {
         let root = (1.0 + A * A * p.y * p.y).sqrt();
         EPS0 * (root + G * (1.0 - p.x.cos()) / root)
     }
 
 
     // Градиент энергии в импульсном пространстве
-    fn energy_gradient(&self, p: &Point) -> Vec2 {
+    fn energy_gradient(&self, p: &Vec2) -> Vec2 {
         let b = 1.0 + A * A * p.y * p.y;
         let root = b.sqrt();
         Vec2::new(G * EPS0 / root * p.x.sin(),
@@ -131,20 +131,20 @@ impl Material for SL {
     }
 
     // Скорость
-    fn velocity(&self, p: &Point) -> Vec2 {
+    fn velocity(&self, p: &Vec2) -> Vec2 {
         self.energy_gradient(&p) * (D / HBAR / C)
     }
 
-    fn momentums(&self, e: f64, theta: f64) -> Vec<Point> {
+    fn momentums(&self, e: f64, theta: f64) -> Vec<Vec2> {
         let samples = 20;
         let precision = 1e-7;
         let dir = Vec2::from_polar(1.0, theta);
         let step = dir * self.brillouin_zone().pmax(theta) / (samples as f64);
 
-        let mut ps: Vec<Point> = Vec::new();
+        let mut ps: Vec<Vec2> = Vec::new();
 
         for i in 0..samples {
-            let mut left = Point::from_vec2(step * i as f64);
+            let mut left = step * i as f64;
             let mut right = left + step;
             if (self.energy(&left) - e) * (self.energy(&right) - e) < 0.0 {
                 while (right - left).len() > precision {
@@ -174,10 +174,10 @@ impl Material for SL {
     fn optical_energy(&self) -> f64 {
         self.optical_energy
     }
-    fn optical_scattering(&self, p: &Point) -> f64 {
+    fn optical_scattering(&self, p: &Vec2) -> f64 {
         self.optical_constant * self.probability(self.energy(p) - self.optical_energy)
     }
-    fn acoustic_scattering(&self, p: &Point) -> f64 {
+    fn acoustic_scattering(&self, p: &Vec2) -> f64 {
         self.acoustic_constant * self.probability(self.energy(p))
     }
 }
@@ -196,9 +196,9 @@ pub struct SL2 {
 
 impl SL2 {
     pub fn new(optical_energy: f64, optical_constant: f64, acoustic_constant: f64) -> SL {
-        let a = Point::new(-PI, 0.0);
-        let b = Point::new(0.0, -PI);
-        let d = Point::new(0.0, PI);
+        let a = Vec2::new(-PI, 0.0);
+        let b = Vec2::new(0.0, -PI);
+        let d = Vec2::new(0.0, PI);
         let brillouin_zone = BrillouinZone::new(a, b, d);
         let energy_samples = 1000usize;
 
@@ -258,31 +258,31 @@ impl SL2 {
 
 impl Material for SL2 {
     // Выражение для энергетического спектра (в декартовых координатах)
-    fn energy(&self, p: &Point) -> f64 {
+    fn energy(&self, p: &Vec2) -> f64 {
         EPS1 * (1.0 - p.x.cos() * p.y.cos()) / 2.0
     }
 
 
     // Градиент энергии в импульсном пространстве
-    fn energy_gradient(&self, p: &Point) -> Vec2 {
+    fn energy_gradient(&self, p: &Vec2) -> Vec2 {
         Vec2::new(p.x.sin() * p.y.cos(), p.x.cos() * p.y.sin()) * EPS1 / 2.0
     }
 
     // Скорость
-    fn velocity(&self, p: &Point) -> Vec2 {
+    fn velocity(&self, p: &Vec2) -> Vec2 {
         self.energy_gradient(&p) * (D / HBAR / C)
     }
 
-    fn momentums(&self, e: f64, theta: f64) -> Vec<Point> {
+    fn momentums(&self, e: f64, theta: f64) -> Vec<Vec2> {
         let samples = 20;
         let precision = 1e-7;
         let dir = Vec2::from_polar(1.0, theta);
         let step = dir * self.brillouin_zone().pmax(theta) / (samples as f64);
 
-        let mut ps: Vec<Point> = Vec::new();
+        let mut ps: Vec<Vec2> = Vec::new();
 
         for i in 0..samples {
-            let mut left = Point::from_vec2(step * i as f64);
+            let mut left = step * i as f64;
             let mut right = left + step;
             if (self.energy(&left) - e) * (self.energy(&right) - e) < 0.0 {
                 while (right - left).len() > precision {
@@ -312,10 +312,10 @@ impl Material for SL2 {
     fn optical_energy(&self) -> f64 {
         self.optical_energy
     }
-    fn optical_scattering(&self, p: &Point) -> f64 {
+    fn optical_scattering(&self, p: &Vec2) -> f64 {
         self.optical_constant * self.probability(self.energy(p) - self.optical_energy)
     }
-    fn acoustic_scattering(&self, p: &Point) -> f64 {
+    fn acoustic_scattering(&self, p: &Vec2) -> f64 {
         self.acoustic_constant * self.probability(self.energy(p))
     }
 }
