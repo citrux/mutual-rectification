@@ -5,6 +5,7 @@ use scattering::material::{Material, BrillouinZone};
 use scattering::probability;
 use linal::Vec2;
 
+const E: f64 = 1.6e-19;
 const VF: f64 = 1e6;
 const HBAR: f64 = 6.5e-16;
 const C: f64 = 3e8;
@@ -132,7 +133,7 @@ impl Material for SL {
 
     // Скорость
     fn velocity(&self, p: &Vec2) -> Vec2 {
-        self.energy_gradient(&p) * (D / HBAR / C)
+        self.energy_gradient(&p) * (D / HBAR)
     }
 
     fn momentums(&self, e: f64, theta: f64) -> Vec<Vec2> {

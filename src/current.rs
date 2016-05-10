@@ -6,10 +6,7 @@ extern crate linal;
 
 mod material;
 
-use std::env::args;
-use std::fs::{OpenOptions, remove_file, create_dir};
-use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::io::{stdin, Read};
 
 use tini::Ini;
 use time::{get_time, SteadyTime};
@@ -19,11 +16,9 @@ use scattering::{Fields, Stats, create_ensemble};
 use material::SL;
 
 fn main() {
-    let file_name = match args().nth(1) {
-        Some(file) => file,
-        None => "config.ini".to_owned(),
-    };
-    let conf = Ini::from_file(&file_name).unwrap();
+    let mut buffer = String::new();
+    let _ = stdin().read_to_string(&mut buffer);
+    let conf = Ini::from_buffer(buffer);
 
     let plot = plot_from_config(&conf);
     let fields = fields_from_config(&conf);
@@ -39,17 +34,31 @@ fn main() {
     let particles: usize = conf.get("modelling", "particles").unwrap_or(100);
     let threads: usize = conf.get("modelling", "threads").unwrap_or(1);
 
-
-    let output_clone = plot.output.clone();
-    let output = Path::new(&output_clone);
-    clean_result(&output);
-
-    println!("start calculations for `{}`", file_name);
-    println!("you can find results in `{}`", output.display());
-
     let plot_count = ((plot.high - plot.low) / plot.step) as u32;
     let all_time_start = SteadyTime::now();
 
+    println!("{:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} \
+                  {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} \
+                  {:^10} {:^10} {:^10}",
+             "E0.x",
+             "E0.y",
+             "E1.x",
+             "E1.y",
+             "E2.x",
+             "E2.y",
+             "B0",
+             "B1",
+             "B2",
+             "omega1",
+             "omega2",
+             "phi",
+             "jx",
+             "jx_std",
+             "jy",
+             "jy_std",
+             "optical",
+             "acoustic",
+             "tau");
     for (index, f) in plot.domain(&fields).enumerate() {
         let part_time_start = SteadyTime::now();
         let ensemble = create_ensemble(particles, &m, temperature, get_time().nsec as u32);
@@ -72,17 +81,29 @@ fn main() {
         let mut result = Stats::from_ensemble(&ensemble_summary);
         // dirty: electrons have negative charge
         result.current = -result.current;
-        append_result_line(&output, &f, &result);
-
-        let part_time_stop = SteadyTime::now();
-        println!(">> point {index} of {count}: done in {time} s",
-                 index = index + 1,
-                 count = plot_count,
-                 time = (part_time_stop - part_time_start).num_seconds());
+        println!("{:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} \
+                  {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} \
+                  {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e}",
+                 f.e.0.x,
+                 f.e.0.y,
+                 f.e.1.x,
+                 f.e.1.y,
+                 f.e.2.x,
+                 f.e.2.y,
+                 f.b.0,
+                 f.b.1,
+                 f.b.2,
+                 f.omega.1,
+                 f.omega.2,
+                 f.phi,
+                 result.current.x,
+                 result.current_std.x,
+                 result.current.y,
+                 result.current_std.y,
+                 result.optical,
+                 result.acoustic,
+                 result.tau);
     }
-    let all_time_stop = SteadyTime::now();
-    println!(">> total time: {} s",
-             (all_time_stop - all_time_start).num_seconds());
 }
 
 
@@ -92,7 +113,6 @@ struct Plot {
     high: f64,
     step: f64,
     var: String,
-    output: String,
     fields: Fields,
     n: usize,
     current: usize,
@@ -144,13 +164,11 @@ fn plot_from_config(conf: &Ini) -> Plot {
     let high: f64 = conf.get("plot", "high").unwrap_or(0.0);
     let step: f64 = conf.get("plot", "step").unwrap_or(1.0);
     let var: String = conf.get("plot", "var").unwrap_or("E0.y".to_owned());
-    let output: String = conf.get("plot", "output").unwrap_or("data/result.dat".to_owned());
     Plot {
         low: low,
         high: high,
         step: step,
         var: var,
-        output: output,
         fields: Fields::zero(),
         n: 0,
         current: 0,
@@ -169,52 +187,4 @@ fn fields_from_config(conf: &Ini) -> Fields {
     f.omega.2 = conf.get("fields", "omega2").unwrap_or(f.omega.2);
     f.phi = conf.get("fields", "phi").unwrap_or(f.phi);
     f
-}
-
-fn clean_result(filename: &Path) {
-    let _ = remove_file(filename);
-}
-
-fn append_result_line(filename: &Path, fields: &Fields, result: &Stats) {
-    let parent = filename.parent()
-                         .expect(&format!("Can't get parent directory for `{}`",
-                                          filename.display()));
-    if parent.exists() == false {
-        create_dir(parent)
-            .ok()
-            .expect(&format!("Can't create `{}` directory!", parent.display()));
-    }
-    let file = OpenOptions::new()
-                   .create(true)
-                   .write(true)
-                   .append(true)
-                   .open(filename)
-                   .unwrap();
-    let mut writer = BufWriter::new(file);
-    write!(writer,
-           "{:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} \
-            {:10.3e} {:10.3e} {:10.3e} ",
-           fields.e.0.x,
-           fields.e.0.y,
-           fields.e.1.x,
-           fields.e.1.y,
-           fields.e.2.x,
-           fields.e.2.y,
-           fields.b.0,
-           fields.b.1,
-           fields.b.2,
-           fields.omega.1,
-           fields.omega.2,
-           fields.phi)
-        .unwrap();
-    write!(writer,
-           "{:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e} {:10.3e}\n",
-           result.current.x,
-           result.current_std.x,
-           result.current.y,
-           result.current_std.y,
-           result.optical,
-           result.acoustic,
-           result.tau)
-        .unwrap();
 }
