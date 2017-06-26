@@ -89,7 +89,7 @@ impl SL {
                 let j1 = (j as f64) / (n as f64);
                 let p = self.brillouin_zone.a + self.brillouin_zone.basis.0 * i1 +
                         self.brillouin_zone.basis.1 * j1;
-                let e = self.energy(&p);
+                let e = self.energy(p);
                 if e < emin {
                     emin = e;
                 }
@@ -117,14 +117,14 @@ impl SL {
 
 impl Material for SL {
     // Выражение для энергетического спектра (в декартовых координатах)
-    fn energy(&self, p: &Vec2) -> f64 {
+    fn energy(&self, p: Vec2) -> f64 {
         let root = (1.0 + A * A * p.y * p.y).sqrt();
         EPS0 * (root + G * (1.0 - p.x.cos()) / root)
     }
 
 
     // Градиент энергии в импульсном пространстве
-    fn energy_gradient(&self, p: &Vec2) -> Vec2 {
+    fn energy_gradient(&self, p: Vec2) -> Vec2 {
         let b = 1.0 + A * A * p.y * p.y;
         let root = b.sqrt();
         Vec2::new(G * EPS0 / root * p.x.sin(),
@@ -132,8 +132,8 @@ impl Material for SL {
     }
 
     // Скорость
-    fn velocity(&self, p: &Vec2) -> Vec2 {
-        self.energy_gradient(&p) * (D / HBAR)
+    fn velocity(&self, p: Vec2) -> Vec2 {
+        self.energy_gradient(p) * (D / HBAR)
     }
 
     fn momentums(&self, e: f64, theta: f64) -> Vec<Vec2> {
@@ -147,10 +147,10 @@ impl Material for SL {
         for i in 0..samples {
             let mut left = step * i as f64;
             let mut right = left + step;
-            if (self.energy(&left) - e) * (self.energy(&right) - e) < 0.0 {
+            if (self.energy(left) - e) * (self.energy(right) - e) < 0.0 {
                 while (right - left).len() > precision {
                     let middle = left + (right - left) / 2.0;
-                    if (self.energy(&left) - e) * (self.energy(&middle) - e) < 0.0 {
+                    if (self.energy(left) - e) * (self.energy(middle) - e) < 0.0 {
                         right = middle;
                     } else {
                         left = middle;
@@ -175,10 +175,10 @@ impl Material for SL {
     fn optical_energy(&self) -> f64 {
         self.optical_energy
     }
-    fn optical_scattering(&self, p: &Vec2) -> f64 {
+    fn optical_scattering(&self, p: Vec2) -> f64 {
         self.optical_constant * self.probability(self.energy(p) - self.optical_energy)
     }
-    fn acoustic_scattering(&self, p: &Vec2) -> f64 {
+    fn acoustic_scattering(&self, p: Vec2) -> f64 {
         self.acoustic_constant * self.probability(self.energy(p))
     }
 }
@@ -259,19 +259,19 @@ impl SL2 {
 
 impl Material for SL2 {
     // Выражение для энергетического спектра (в декартовых координатах)
-    fn energy(&self, p: &Vec2) -> f64 {
+    fn energy(&self, p: Vec2) -> f64 {
         EPS1 * (1.0 - p.x.cos() * p.y.cos()) / 2.0
     }
 
 
     // Градиент энергии в импульсном пространстве
-    fn energy_gradient(&self, p: &Vec2) -> Vec2 {
+    fn energy_gradient(&self, p: Vec2) -> Vec2 {
         Vec2::new(p.x.sin() * p.y.cos(), p.x.cos() * p.y.sin()) * EPS1 / 2.0
     }
 
     // Скорость
-    fn velocity(&self, p: &Vec2) -> Vec2 {
-        self.energy_gradient(&p) * (D / HBAR / C)
+    fn velocity(&self, p: Vec2) -> Vec2 {
+        self.energy_gradient(p) * (D / HBAR / C)
     }
 
     fn momentums(&self, e: f64, theta: f64) -> Vec<Vec2> {
@@ -285,10 +285,10 @@ impl Material for SL2 {
         for i in 0..samples {
             let mut left = step * i as f64;
             let mut right = left + step;
-            if (self.energy(&left) - e) * (self.energy(&right) - e) < 0.0 {
+            if (self.energy(left) - e) * (self.energy(right) - e) < 0.0 {
                 while (right - left).len() > precision {
                     let middle = left + (right - left) / 2.0;
-                    if (self.energy(&left) - e) * (self.energy(&middle) - e) < 0.0 {
+                    if (self.energy(left) - e) * (self.energy(middle) - e) < 0.0 {
                         right = middle;
                     } else {
                         left = middle;
@@ -313,10 +313,10 @@ impl Material for SL2 {
     fn optical_energy(&self) -> f64 {
         self.optical_energy
     }
-    fn optical_scattering(&self, p: &Vec2) -> f64 {
+    fn optical_scattering(&self, p: Vec2) -> f64 {
         self.optical_constant * self.probability(self.energy(p) - self.optical_energy)
     }
-    fn acoustic_scattering(&self, p: &Vec2) -> f64 {
+    fn acoustic_scattering(&self, p: Vec2) -> f64 {
         self.acoustic_constant * self.probability(self.energy(p))
     }
 }

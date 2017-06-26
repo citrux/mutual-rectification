@@ -61,7 +61,7 @@ fn main() {
              "tau");
     for (index, f) in plot.domain(&fields).enumerate() {
         let part_time_start = SteadyTime::now();
-        let ensemble = create_ensemble(particles, &m, temperature, get_time().nsec as u32);
+        let ensemble = create_ensemble(particles, &m, temperature);
 
         let mut ensemble_summary = vec![Summary::empty(); particles];
         let mut pool = Pool::new(threads as u32);
