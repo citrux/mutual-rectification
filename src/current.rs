@@ -13,7 +13,7 @@ use time::{get_time, SteadyTime};
 use scoped_threadpool::Pool;
 use scattering::particle::Summary;
 use scattering::{Fields, Stats, create_ensemble};
-use material::SL;
+use material::SL3;
 
 fn main() {
     let mut buffer = String::new();
@@ -26,7 +26,7 @@ fn main() {
     let optical_energy: f64 = conf.get("phonons", "optical_energy").unwrap_or(5e-2);
     let optical_constant: f64 = conf.get("phonons", "optical_constant").unwrap_or(1.5e-3);
     let acoustic_constant: f64 = conf.get("phonons", "acoustic_constant").unwrap_or(1.5e-3);
-    let m = SL::new(optical_energy, optical_constant, acoustic_constant);
+    let m = SL3::new(optical_energy, optical_constant, acoustic_constant);
 
     let dt: f64 = conf.get("modelling", "dt").unwrap_or(1e-1);
     let all_time: f64 = conf.get("modelling", "all_time").unwrap_or(1e3);
