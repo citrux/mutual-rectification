@@ -39,7 +39,7 @@ fn main() {
 
     println!("{:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} \
                   {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10} \
-                  {:^10} {:^10} {:^10}",
+                  {:^10} {:^10} {:^10} {:^10}",
              "E0.x",
              "E0.y",
              "E1.x",
@@ -58,7 +58,8 @@ fn main() {
              "jy_std",
              "optical",
              "acoustic",
-             "tau");
+             "tau",
+             "energy");
     for (index, f) in plot.domain(&fields).enumerate() {
         let part_time_start = SteadyTime::now();
         let ensemble = create_ensemble(particles, &m, temperature);
@@ -83,7 +84,7 @@ fn main() {
         result.current = -result.current;
         println!("{:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} \
                   {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} \
-                  {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e}",
+                  {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e} {:^10.3e}",
                  f.e.0.x,
                  f.e.0.y,
                  f.e.1.x,
@@ -102,7 +103,8 @@ fn main() {
                  result.current_std.y,
                  result.optical,
                  result.acoustic,
-                 result.tau);
+                 result.tau,
+                 result.energy);
     }
 }
 
